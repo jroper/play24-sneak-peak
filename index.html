@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 
-<title>Your title</title>
+<title>Play 2.4 - A sneak peak</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -36,113 +36,356 @@
 <div class="slides">
 
 
-<!-- ########################################################################################### -->
-<!-- BEGIN
-<!-- ########################################################################################### -->
-
-<!-- ########################################################################################### -->
 <section data-markdown data-background="#103a51" data-state="h2Uppercase"><script type="text/template">
 
 ![Typesafe](images/typesafe-logo-text.png "Typesafe")
 
 </script></section>
 
-<!-- ########################################################################################### -->
 <section data-markdown data-background="#103a51" data-state="h2Uppercase">
-##Presentation Title
+## Play 2.4 - A sneak peak
 
-###Full name
+### James Roper
 </section>
 
-
-<!-- ########################################################################################### -->
 <section data-markdown><script type="text/template">
-# A Big Statement!
+## Partnership with IBM
+
+* Play will be backed by WebSphere AS
+* Play colors change from green to blue
+* Improved compiler
+  - Code written while not wearing a blue tie is a syntax error
+</script></section>
+
+<section data-markdown><script type="text/template">
+# A look into the past
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Play 1.0
+
+- Django/Ruby on Rails clone for Java
+- Heavily relied on global state
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Play 2.0
+
+- Reactive and Functional
+- High productivity developer experience
+- Inherited global state from Play 1
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Global state
+
+- Primarily comes down to `play/api/Play.scala:73`:
+    ```scala
+    @volatile var _currentApp: Application
+    ```
+- Makes testing difficult 
+</script></section>
+
+<section data-markdown><script type="text/template">
+# A look into the future
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Play 3.0
+
+- Reactive and Functional
+- High productivity developer experience
+- No global state!
+</script></section>
+
+<section data-markdown><script type="text/template">
+# The current: Play 2.4
+</script></section>
+
+<section data-markdown><script type="text/template">
+# Dependency Injection
+</script></section>
+
+<section data-markdown><script type="text/template">
+## State of DI in Java
+
+- General approach: solved
+- Which DI framework: hotly debated
+</script></section>
+
+<section data-markdown><script type="text/template">
+## State of DI in Scala
+
+- General approach: hotly debated
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Options for DI in Scala
+
+- Runtime Injection (Guice, Spring etc)
+- Compile time injection
+    * Cake pattern
+    * Implicit wiring
+    * Macro based tools
+    * Reader Monad
+    * Manual constructor wiring
+</script></section>
+
+<section data-markdown><script type="text/template">
+# How can we make everyone happy?
+</script></section>
+
+<section data-markdown><script type="text/template">
+## DI principles in Play 2.4
+
+- Plain old constructors/factory methods
+- Provide abstraction to use any runtime DI provider
+- Provide one runtime DI provider out of the box
+- Provide helpers for compile time injection out of the box
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Backwards compatibility
+
+- Where possible, deprecate rather than delete
+- Allow DI code to exist alongside static code
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Runtime DI
+
+- Provide Guice by default
+- Use JSR330 annotations for wiring
+- Provide a binding abstraction to allow other DI providers
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Compile time DI
+
+- Provide an implementation of the *lightweight cake pattern*
+</script></section>
+
+<section data-markdown><script type="text/template">
+# Testing
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Unit testing
+
+- Is now *possible* without abstracting over Play APIs
+- Mock dependencies by injecting them into the component
+- Use familiar tools such as mockito
 </script></section>
 
 
-<!-- ########################################################################################### -->
 <section data-markdown><script type="text/template">
-## Title Text
+## Integration testing
 
-- Don&#39;t use single quotes in HTML
-  - Instead use the correct HTML char
-- Yet another bullet point of high importance
-- Three bullet points look nicer than two
+* Multi component integration testing
+    - Testing some components together
+    - In isolation from the application
+    - Does not start a Play application
+    - Simpler, less fragile tests
+* Full integration testing
+    - Starts a Play application
 </script></section>
 
-<!-- ########################################################################################### -->
 <section data-markdown><script type="text/template">
-## Image with Text
+## Testing with databases
 
-![Distribution](images/distribution.jpg "Distribution")
-
-Everything in Akka is **distributed by default**
+- Programatic instantiation of connection pools
+- Programatic applictaion of evolutions
+- No running application required
 </script></section>
 
-<!-- ########################################################################################### -->
 <section data-markdown><script type="text/template">
-## Code
+## Testing with databases in Scala
 
-``` scala
-// Message Protocol
-case class Greeting(who: String)
+```scala
+Database.withDatabase(
+  driver = "com.mysql.jdbc.Driver",
+  url = "jdbc:mysql://localhost/test"
+) { database =>
+  val connection = database.getConnection()
+  // ...
+}
+```
+</script></section>
 
-class GreetingActor extends Actor {
-  // Put mutable state in here..
+<section data-markdown><script type="text/template">
+## Testing with databases in Java
 
-  def receive = {
-    // Define the behavior here..
-    case Greeting(who) => println(s"Hello $who")
+```java
+Database database;
+
+@Before
+public void createDatabase() {
+    database = Database.createFrom(
+            "com.mysql.jdbc.Driver",
+            "jdbc:mysql://localhost/test"
+    );
+}
+
+@After
+public void shutdownDatabase() {
+    database.shutdown();
+}
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Testing with mocked webservices
+
+- Embeds webservices in tests
+- Full HTTP client test
+- No running application required
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Mocked webservices in Scala
+
+```scala
+Server.withRouter() {
+  case GET(p"/repositories") => Action {
+    Results.Ok.sendResource("gh/repos.json")
+  }
+} { implicit port =>
+  WsTestClient.withClient { client =>
+    val gitHub = new GitHubClient(client, "")
+    val result = await(gitHub.repositories())
+    result must_== Seq("octocat/Hello-World")
   }
 }
 ```
 </script></section>
 
-<!-- ########################################################################################### -->
 <section data-markdown><script type="text/template">
-## Code with Text
+## Mocked webservices in Java
+
+```java
+Server server = Server.forRouter(new RoutingDsl()
+    .GET("/repositories").routeTo(() ->
+            ok().sendResource("gh/repos.json")
+    )
+    .build()
+);
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Full integration testing
+
+* Dependent on the DI provider
+* GuiceApplicationBuilder
+    - Override configuration
+    - Override modules
+    - Override individual bindings
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Overriding bindings in Scala
 
 ```scala
-scala> var message = "Hello, world!"
-message: String = Hello, world!
+import play.api.inject.bind
 
-scala> message = "Trying to reassign ..."
-message: String = Trying to reassign ...
+val cache = mock[Cache]
+
+val application = new GuiceApplicationBuilder()
+  .bindings(bind[Cache].toInstance(cache))
+  .build
 ```
-- A mutable variable is defined with the *var* keyword
-- Can be reassigned a new value
 </script></section>
 
-<!-- ########################################################################################### -->
 <section data-markdown><script type="text/template">
-## Quote Example
+## Overriding bindings in Java
 
-<blockquote>My favorite things in life don&#39;t cost any money. It&#39;s really clear that the most precious resource we all have is time.</blockquote>
-<small>Steve Jobs</small>
+```java
+import static play.inject.Bindings.bind;
+
+Cache cache = mock(Cache.class);
+
+Application application = new GuiceApplicationBuilder()
+    .bindings(bind(Cache.class).toInstance(cache))
+    .build();
+);
+```
 </script></section>
 
+<section data-markdown><script type="text/template">
+## DI wrap up
 
-<!-- ########################################################################################### -->
-<section>
-<h2>Get It and Learn More</h2>
-<ul>
-    <li><a href="http://akka.io">akka.io</a></li>
-    <li><a href="http://letitcrash.com">letitcrash.com</a></li>
-    <li><a href="https://typesafe.com/activator/templates">Akka Tutorials</a></li>
-    <li>
-        <a href="https://twitter.com/akkateam" class="twitter-follow-button" data-show-count="true">Follow @akkateam</a>
-        <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
-        <iframe src="http://ghbtns.com/github-btn.html?user=akka&type=follow&count=false"
-    allowtransparency="true" frameborder="0" scrolling="0" width="165" height="20"></iframe>
-    </li>
-</ul>
-</section>
+* Pathway towards removing global state
+* Something for everyone
+* Biggest advantage is testing
+</script></section>
 
+<section data-markdown><script type="text/template">
+# Advance questions
+</script></section>
 
-<!-- ########################################################################################### -->
-<!-- END
-<!-- ########################################################################################### -->
+<section data-markdown><script type="text/template">
+## Akka HTTP
+
+* Experimental support in Play 2.4
+* **Most** Play integration tests passing
+* No performance testing done yet
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Enabling Akka HTTP
+
+```scala
+lazy val root = (project in file("."))
+  .enablePlugins(PlayScala, PlayAkkaHttpServer)
+  .disablePlugins(PlayNettyServer)
+```
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Reactive Streams
+
+* Experimental support in Play 2.4
+* Provides iteratee/enumerator implementions of subscribers/publishers
+* No performance tuning has been done yet
+* Play 3 will replace iteratees with reactive streams
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Java 8
+
+* Play 2.4 requires JDK 8
+* Some JDK 8 APIs in use for Java API
+* All Java documentation now uses lambdas
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Other build tools
+
+* Work done by LinkedIn to support Gradle
+* Work done by Play community to make Play more build tool agnostic
+* Typesafe will only officially support sbt
+* sbt configuration option to switch back to a standard Maven/SBT project layout
+</script></section>
+
+<section data-markdown><script type="text/template">
+## HikariCP
+
+* Play 2.4 makes HikariCP the default connection pool
+* BoneCP still available and straight forward to use
+</script></section>
+
+<section data-markdown><script type="text/template">
+## Resources
+
+* [http://jroper.github.io/play24-sneak-peak](http://jroper.github.io/play24-sneak-peak)
+* Dependency injection in [Java](https://playframework.com/documentation/2.4.x/JavaDependencyInjection) and [Scala](https://playframework.com/documentation/2.4.x/ScalaDependencyInjection)
+* Testing with databases in [Java](https://playframework.com/documentation/2.4.x/JavaTestingWithDatabases) and [Scala](https://playframework.com/documentation/2.4.x/ScalaTestingWithDatabases)
+* Testing web service clients in [Java](https://playframework.com/documentation/2.4.x/JavaTestingWebServiceClients) and [Scala](https://playframework.com/documentation/2.4.x/ScalaTestingWebServiceClients)
+* Integration testing with Guice in [Java](https://playframework.com/documentation/2.4.x/JavaTestingWithGuice) and [Scala](https://playframework.com/documentation/2.4.x/ScalaTestingWithGuice)
+* Using the [Akka HTTP server backend](https://playframework.com/documentation/2.4.x/AkkaHttpServer)
+* [Reactive streams support](https://playframework.com/documentation/2.4.x/ReactiveStreamsIntegration)
+* [Play 2.4 Migration Guide](https://playframework.com/documentation/2.4.x/Migration24)
+</script></section>
 
 
 </div>
